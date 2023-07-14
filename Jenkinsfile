@@ -26,7 +26,6 @@ pipeline {
                     def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     sh 'docker login -u AWS -p $(aws ecr-public get-login-password --region us-east-1) public.ecr.aws/s8h8u3c8'
                     sh "docker build -t ${REPOSITORY_URI}:${gitCommit} ."
-                    sh "docker tag ${REPOSITORY_URI}:${gitCommit} ${REPOSITORY_URI}:${gitCommit}"
                 }
             }
         }
@@ -36,24 +35,23 @@ pipeline {
                 // ECR 인증/이미지 푸시
                 script {
                     sh "docker push ${REPOSITORY_URI}:${gitCommit}"
-                    sh "docker rmi ${REPOSITORY_URI}:${gitCommit}"
                 }
             }
         }
 
-        stage('Prepare Deploy') {
-            steps {
-                // taskdef.json 변경/업데이트
-                script {
-                    sh """
-                        sed -e 's;%GIT_HASH%;${gitCommit};g' taskdef.json > \
-                        taskdef-${gitCommit}.json
+        // stage('Prepare Deploy') {
+        //     steps {
+        //         // taskdef.json 변경/업데이트
+        //         script {
+        //             sh """
+        //                 sed -e 's;%GIT_HASH%;${gitCommit};g' taskdef.json > \
+        //                 taskdef-${gitCommit}.json
 
-                        aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${gitCommit}.json
-                    """
-                }
-            }
-        }
+        //                 aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${gitCommit}.json
+        //             """
+        //         }
+        //     }
+        // }
         
         // stage('Deploy') {
         //     steps {
