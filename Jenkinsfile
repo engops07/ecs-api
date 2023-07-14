@@ -36,6 +36,7 @@ pipeline {
                 // ECR 인증/이미지 푸시
                 script {
                     sh "docker push ${REPOSITORY_URI}:${gitCommit}"
+                    sh "docker rmi ${REPOSITORY_URI}:${gitCommit}"
                 }
             }
         }
