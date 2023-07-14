@@ -8,6 +8,8 @@ pipeline {
     environment {
         REPOSITORY_URI = 'public.ecr.aws/s8h8u3c8/api'
         PROJECT_NAME = 'api'
+        CLUSTER_NAME = 'fastapi'
+        SERVICE_NAME = 'example'
         TASK_NAME = 'sample'
     }
 
@@ -45,27 +47,21 @@ pipeline {
                 // taskdef.json 변경/업데이트
                 script {
                     def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    sh """
-                        sed -e 's;%GIT_HASH%;${gitCommit};g' taskdef.json > taskdef-${gitCommit}.json
-
-                        aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${gitCommit}.json
-                    """
+                    sh "sed -e 's;%GIT_HASH%;${gitCommit};g' taskdef.json > taskdef-${gitCommit}.json"
+                    sh "aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${gitCommit}.json"   
                 }
             }
         }
         
-        // stage('Deploy') {
-        //     steps {
-        //         // ECS Fargate에 배포
-        //         script {
-        //             // 
-        //             sh 'aws ecs create-cluster --cluster-name my-cluster'
-        //             sh 'aws ecs create-service --service-name my-service --cluster my-cluster --launch-type FARGATE --task-definition my-task --desired-count 1 --network-configuration "awsvpcConfiguration={subnets=[subnet-xxxxxxxx],securityGroups=[sg-xxxxxxxx],assignPublicIp=ENABLED}"'
-                    
-        //             // 새로운 이미지로 태스크 정의 업데이트
-        //             sh 'aws ecs update-service --service my-service --cluster my-cluster --task-definition my-task'
-        //         }
-        //     }
-        // }
+        stage('Deploy') {
+            steps {
+                // ECS Fargate에 배포
+                script {
+                    // 
+                    def TASK_REVISION = sh(returnStdout: true, script: "aws ecs describe-task-definition --task-definition ${TASK_NAME} | egrep 'revision' | awk '{print \$2}'").trim().replace(",","")
+                    sh "aws ecs update-service --cluster ${CLUSTER_NAME} --service ${SERVICE_NAME} --task-definition ${TASK_NAME}:${TASK_REVISION}"
+                }
+            }
+        }
     }
 }
