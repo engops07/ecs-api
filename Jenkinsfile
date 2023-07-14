@@ -1,11 +1,14 @@
 pipeline {
     agent any
     
+    options {
+        timeout(time: 1, unit: 'HOURS') // set timeout 1 hour
+    }
+    
     environment {
         REPOSITORY_URI = 'public.ecr.aws/s8h8u3c8/api'
-        PROJECT_NAME = "api"
-        TASK_NAME = "sample"
-        GIT_HASH = "${GIT_COMMIT[0..6]}"
+        PROJECT_NAME = 'api'
+        TASK_NAME = 'sample'
     }
 
     stages {
@@ -20,7 +23,8 @@ pipeline {
             steps {
                 // Docker 이미지 빌드
                 script {
-                    sh 'docker build -t ${REPOSITORY_URI}:${GIT_HASH} .'
+                    def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    sh "docker build -t ${REPOSITORY_URI}:${gitCommit} ."
                 }
             }
         }
@@ -30,8 +34,8 @@ pipeline {
                 // ECR 인증/이미지 푸시
                 script {
                     sh 'aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/s8h8u3c8'
-                    sh 'docker push ${REPOSITORY_URI}:${GIT_HASH}'
-                    sh 'docker rmi ${REPOSITORY_URI}:${GIT_HASH}'
+                    sh "docker push ${REPOSITORY_URI}:${gitCommit}"
+                    sh "docker rmi ${REPOSITORY_URI}:${gitCommit}"
                 }
             }
         }
@@ -41,10 +45,10 @@ pipeline {
                 // taskdef.json 변경/업데이트
                 script {
                     sh """
-                        sed -e 's;%GIT_HASH%;${GIT_HASH};g' taskdef.json > \
-                        taskdef-${GIT_HASH}.json
+                        sed -e 's;%GIT_HASH%;${gitCommit};g' taskdef.json > \
+                        taskdef-${gitCommit}.json
 
-                        aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${GIT_HASH}.json
+                        aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${gitCommit}.json
                     """
                 }
             }
