@@ -26,7 +26,7 @@ pipeline {
                     def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     sh 'docker login -u AWS -p $(aws ecr-public get-login-password --region us-east-1) public.ecr.aws/s8h8u3c8'
                     sh "docker build -t ${REPOSITORY_URI}:${gitCommit} ."
-                    sh "docker tag ${PROJECT_NAME}:${gitCommit} ${REPOSITORY_URI}:${gitCommit}"
+                    sh "docker tag ${REPOSITORY_URI}:${gitCommit} ${REPOSITORY_URI}:${gitCommit}"
                 }
             }
         }
