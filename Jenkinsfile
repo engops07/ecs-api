@@ -24,7 +24,7 @@ pipeline {
                 // Docker 이미지 빌드
                 script {
                     def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    sh 'docker login -u AWS -p $(aws ecr-public get-login-password --region us-east-1) public.ecr.aws/s8h8u3c8'
+                    sh "docker login -u AWS -p \$(aws ecr-public get-login-password --region us-east-1) public.ecr.aws/s8h8u3c8"
                     sh "docker build -t ${REPOSITORY_URI}:${gitCommit} ."
                 }
             }
@@ -34,6 +34,8 @@ pipeline {
             steps {
                 // ECR 인증/이미지 푸시
                 script {
+                    def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    sh "docker login -u AWS -p \$(aws ecr-public get-login-password --region us-east-1) public.ecr.aws/s8h8u3c8"
                     sh "docker push ${REPOSITORY_URI}:${gitCommit}"
                 }
             }
