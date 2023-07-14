@@ -35,7 +35,6 @@ pipeline {
                 script {
                     sh 'aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/s8h8u3c8'
                     sh "docker push ${REPOSITORY_URI}:${gitCommit}"
-                    sh "docker rmi ${REPOSITORY_URI}:${gitCommit}"
                 }
             }
         }
