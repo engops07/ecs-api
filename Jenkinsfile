@@ -5,12 +5,12 @@ pipeline {
         timeout(time: 1, unit: 'HOURS') // set timeout 1 hour
     }
     
-    environment {
-        REPOSITORY_URI = 'public.ecr.aws/s8h8u3c8/api'
-        PROJECT_NAME = 'api'
-        CLUSTER_NAME = 'fastapi'
-        SERVICE_NAME = 'example'
-        TASK_NAME = 'sample'
+    environment {   // 전역 변수
+        REPOSITORY_URI = 'public.ecr.aws/s8h8u3c8/api'  // ECR 레포지토리 URI
+        PROJECT_NAME = 'api'                            // 공통 (ECS 클러스터, ECR 레포지토리, Jenkins JobName)
+        CLUSTER_NAME = 'fastapi'                        // ECS 클러스터
+        SERVICE_NAME = 'example'                        // example
+        TASK_NAME = 'sample'                            // sample
     }
 
     stages {
@@ -25,6 +25,7 @@ pipeline {
             steps {
                 // Docker 이미지 빌드
                 script {
+                    // gitcommit number -> build / imagename 
                     def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     sh "docker build -t ${REPOSITORY_URI}:${gitCommit} ."
                 }
@@ -48,7 +49,7 @@ pipeline {
                 script {
                     def gitCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     sh "sed -e 's;%GIT_HASH%;${gitCommit};g' taskdef.json > taskdef-${gitCommit}.json"
-                    sh "aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${gitCommit}.json"   
+                    sh "aws ecs register-task-definition --family ${TASK_NAME} --cli-input-json file://taskdef-${gitCommit}.json"
                 }
             }
         }
